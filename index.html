@@ -1,332 +1,374 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quadratic Equation Solver · Ax² + Bx + C = 0</title>
+    <title>汉诺塔 · 第一周静态布局</title>
     <style>
+        /* ========================================
+           CSS 变量 - 统一管理尺寸与颜色
+           ======================================== */
+        :root {
+            --bg-start: #87CEEB;
+            --bg-end: #BBA0E3;
+            --platform-color: #5D4037;
+            --platform-top: #8D6E63;
+            --peg-shaft-light: #C9A87C;
+            --peg-shaft-dark: #6B4226;
+            --peg-base-color: #4E342E;
+            --peg-top-color: #D4A76A;
+            --text-color: #2C1810;
+            --shadow-color: rgba(0, 0, 0, 0.35);
+            --disk-height: 28px;
+            --disk-min-width: 58px;
+            --disk-max-width: 180px;
+            --peg-height: 220px;
+            --peg-shaft-width: 10px;
+            --platform-depth: 28px;
+            --font-main: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+
         * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
         }
+
         body {
-            background: linear-gradient(145deg, #f1f5f9 0%, #e6edf4 100%);
-            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            font-family: var(--font-main);
+            min-height: 100vh;
+            background: linear-gradient(170deg, #87CEEB 0%, #9EC8E8 15%, #B5C2E5 30%, #C4B8E2 50%, #C9AEE0 65%, #BBA0E3 85%, #A890D8 100%);
+            background-attachment: fixed;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 1.5rem;
+            padding: 20px;
+            user-select: none;
         }
-        .card {
-            background: rgba(255,255,255,0.92);
-            backdrop-filter: blur(2px);
-            border-radius: 2rem;
-            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.05);
-            max-width: 580px;
+
+        /* 背景光晕装饰 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -30%;
+            left: -20%;
+            width: 140%;
+            height: 160%;
+            background:
+                radial-gradient(ellipse at 30% 25%, rgba(255, 255, 255, 0.35) 0%, transparent 55%),
+                radial-gradient(ellipse at 70% 60%, rgba(255, 220, 180, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(180, 160, 220, 0.25) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* 主容器 - 毛玻璃效果 */
+        .main-container {
+            position: relative;
+            z-index: 1;
             width: 100%;
-            padding: 2rem 2rem 2rem 2rem;
-            transition: all 0.2s ease;
-            border: 1px solid rgba(255,255,255,0.6);
+            max-width: 820px;
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-radius: 28px;
+            padding: 28px 24px 22px;
+            box-shadow:
+                0 8px 40px rgba(0, 0, 0, 0.18),
+                0 2px 8px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
         }
-        h1 {
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin-top: 0;
-            margin-bottom: 0.25rem;
-            background: linear-gradient(135deg, #1e2b3c, #0f3b2c);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            letter-spacing: -0.3px;
-        }
-        .sub {
-            color: #2c5f6e;
-            border-left: 4px solid #2c7a6e;
-            padding-left: 1rem;
-            margin: 0.8rem 0 1.5rem 0;
-            font-weight: 450;
-            background: #eef4ff70;
-            border-radius: 0 1rem 1rem 0;
-        }
-        .info-panel {
-            background: #fef9e3;
-            border-radius: 1.2rem;
-            padding: 0.9rem 1.2rem;
-            margin: 1.5rem 0 1rem 0;
-            font-size: 0.85rem;
-            border-left: 6px solid #e9b35f;
-            color: #3b2e1e;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-        }
-        .step-list {
-            background: #eef2fa;
-            padding: 0.8rem 1.2rem;
-            border-radius: 1.2rem;
-            font-family: monospace;
-            font-size: 0.85rem;
-            margin: 1rem 0;
-        }
-        button {
-            background: #1f4e3c;
-            border: none;
-            color: white;
-            font-weight: 600;
-            font-size: 1rem;
-            padding: 0.7rem 1.6rem;
-            border-radius: 3rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-top: 0.5rem;
-            width: 100%;
-        }
-        button:hover {
-            background: #0f3e2d;
-            transform: scale(0.98);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .footnote {
-            font-size: 0.7rem;
+
+        /* 标题 */
+        .game-title {
+            font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+            font-weight: 800;
             text-align: center;
-            margin-top: 1.8rem;
-            color: #4a5b6e;
-            border-top: 1px dashed #cbd5e1;
-            padding-top: 1rem;
+            color: #3E2723;
+            letter-spacing: 0.03em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+            line-height: 1.3;
         }
-        code {
-            background: #1e2a36;
-            color: #d9e6f2;
-            padding: 0.2rem 0.4rem;
-            border-radius: 12px;
-            font-size: 0.8rem;
+
+        /* 静态信息条 */
+        .info-bar {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 30px;
+            padding: 8px 24px;
+            font-weight: 700;
+            color: #4E342E;
+            font-size: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        hr {
-            margin: 1rem 0;
-            border-color: #cbd5e180;
+        .highlight {
+            background: radial-gradient(circle at 40% 35%, #FFF8E1, #F9A825);
+            color: #3E2723;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-weight: 800;
+        }
+
+        /* 游戏场景 - 3D 透视容器 */
+        .game-scene {
+            width: 100%;
+            perspective: 900px;
+            perspective-origin: 50% 45%;
+            padding: 10px 0 20px;
+        }
+
+        /* 平台 - 使用 rotateX 创造 3D 倾斜感 */
+        .game-platform {
+            position: relative;
+            width: 100%;
+            min-height: 340px;
+            background: linear-gradient(180deg, #8D6E63 0%, #6D4C41 15%, #5D4037 40%, #4E342E 100%);
+            border-radius: 18px;
+            transform: rotateX(8deg);
+            transform-style: preserve-3d;
+            box-shadow:
+                0 16px 40px rgba(0, 0, 0, 0.35),
+                0 4px 12px rgba(0, 0, 0, 0.2),
+                inset 0 3px 0 rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            padding: 20px 5% 30px;
+            gap: 10px;
+        }
+        /* 平台顶面高光 */
+        .game-platform::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 6%;
+            right: 6%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.13);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* 单个柱子区域 */
+        .peg-area {
+            position: relative;
+            flex: 1;
+            max-width: 200px;
+            min-width: 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 1;
+        }
+
+        /* 盘子堆叠容器 */
+        .disks-stack {
+            position: relative;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 30px;
+            margin-bottom: 4px;
+            z-index: 3;
+        }
+
+        /* 单个盘子 - 3D 渐变与阴影 */
+        .disk {
+            position: relative;
+            height: var(--disk-height);
+            border-radius: 14px;
+            flex-shrink: 0;
+            box-shadow:
+                0 3px 0 rgba(0, 0, 0, 0.2),
+                0 5px 10px rgba(0, 0, 0, 0.25),
+                0 1px 2px rgba(255, 255, 255, 0.3) inset;
+            border: 1.5px solid rgba(0, 0, 0, 0.15);
+            transform-style: preserve-3d;
+            margin-bottom: -8px; /* 盘子间轻微重叠，形成堆叠感 */
+        }
+        /* 盘子顶部高光 */
+        .disk::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 10%;
+            right: 10%;
+            height: 35%;
+            background: rgba(255, 255, 255, 0.35);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* 柱子的 3D 视觉元素 */
+        .peg-visual {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .peg-top-cap {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 40% 30%, #FDEBD0, #C9956B);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+            margin-bottom: -3px;
+            z-index: 2;
+        }
+        .peg-shaft {
+            width: var(--peg-shaft-width);
+            height: var(--peg-height);
+            background: linear-gradient(to right,
+                    var(--peg-shaft-dark) 0%,
+                    #8B5E3C 15%,
+                    var(--peg-shaft-light) 35%,
+                    #E8CFA0 50%,
+                    var(--peg-shaft-light) 65%,
+                    #8B5E3C 85%,
+                    var(--peg-shaft-dark) 100%);
+            border-radius: 5px;
+            box-shadow:
+                0 4px 12px rgba(0, 0, 0, 0.3),
+                inset 0 2px 0 rgba(255, 255, 255, 0.15);
+            z-index: 1;
+        }
+        .peg-base {
+            width: 44px;
+            height: 16px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at 50% 30%, #6D4C41, #3E2723);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.4);
+            margin-top: -4px;
+            z-index: 0;
+        }
+        .peg-label {
+            margin-top: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #FDEBD0;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+            letter-spacing: 0.05em;
+            text-align: center;
+        }
+
+        /* ========================================
+           静态页面专用：盘子颜色与宽度
+           这里手动为每个盘子设置样式，模拟大小渐变
+           ======================================== */
+        .disk-5 { width: 180px; background: linear-gradient(180deg, hsl(0, 70%, 70%) 0%, hsl(0, 70%, 50%) 35%, hsl(0, 70%, 40%) 100%); }
+        .disk-4 { width: 150px; background: linear-gradient(180deg, hsl(72, 70%, 66%) 0%, hsl(72, 70%, 48%) 35%, hsl(72, 70%, 38%) 100%); }
+        .disk-3 { width: 120px; background: linear-gradient(180deg, hsl(144, 70%, 64%) 0%, hsl(144, 70%, 46%) 35%, hsl(144, 70%, 36%) 100%); }
+        .disk-2 { width: 90px;  background: linear-gradient(180deg, hsl(216, 70%, 66%) 0%, hsl(216, 70%, 48%) 35%, hsl(216, 70%, 38%) 100%); }
+        .disk-1 { width: 60px;  background: linear-gradient(180deg, hsl(288, 70%, 68%) 0%, hsl(288, 70%, 50%) 35%, hsl(288, 70%, 40%) 100%); }
+
+        /* 响应式 - 平板 */
+        @media (max-width: 768px) {
+            :root {
+                --disk-height: 22px;
+                --peg-height: 160px;
+                --peg-shaft-width: 8px;
+            }
+            .main-container { padding: 18px 10px 14px; gap: 12px; }
+            .game-platform { padding: 14px 3% 22px; min-height: 250px; border-radius: 14px; transform: rotateX(5deg); }
+            .peg-top-cap { width: 16px; height: 16px; }
+            .peg-base { width: 32px; height: 12px; }
+            .disk { border-radius: 10px; }
+            .disk-5 { width: 130px; }
+            .disk-4 { width: 108px; }
+            .disk-3 { width: 86px; }
+            .disk-2 { width: 64px; }
+            .disk-1 { width: 42px; }
+        }
+
+        @media (max-width: 420px) {
+            :root {
+                --disk-height: 18px;
+                --peg-height: 120px;
+                --peg-shaft-width: 6px;
+            }
+            .main-container { padding: 12px 6px 10px; gap: 8px; }
+            .game-platform { padding: 10px 2% 16px; min-height: 190px; border-radius: 10px; transform: rotateX(3deg); }
+            .disk { border-radius: 8px; }
+            .disk-5 { width: 100px; }
+            .disk-4 { width: 84px; }
+            .disk-3 { width: 68px; }
+            .disk-2 { width: 52px; }
+            .disk-1 { width: 36px; }
         }
     </style>
 </head>
 <body>
-<div class="card">
-    <h1>⚡ Quadratic Solver</h1>
-    <div class="sub">ax² + bx + c = 0 &nbsp;|&nbsp; real roots (Δ ≥ 0, a > 0)</div>
+    <div class="main-container">
+        <!-- 标题 -->
+        <h1 class="game-title">🗼 汉诺塔 · 3D 静态布局 🗼</h1>
 
-    <div class="info-panel">
-        📐 <strong>How it works</strong><br>
-        → Three <code>prompt()</code> dialogs for coefficients a, b, c.<br>
-        → Converts values using <code>parseFloat()</code>.<br>
-        → Calculates Δ = b² – 4ac &nbsp;→ &nbsp;x₁, x₂.<br>
-        → Shows results via <strong>alert()</strong> and also in <strong>console</strong>.
+        <!-- 静态信息：显示盘子数量 -->
+        <div class="info-bar">
+            📌 当前盘子数量：<span class="highlight">5</span>
+        </div>
+
+        <!-- 3D 游戏场景 -->
+        <div class="game-scene">
+            <div class="game-platform">
+                <!-- ===== 柱子 A (左) - 所有盘子初始位置 ===== -->
+                <div class="peg-area">
+                    <div class="disks-stack">
+                        <!-- 静态放置5个盘子，从大到小（底部最大） -->
+                        <div class="disk disk-5"></div>
+                        <div class="disk disk-4"></div>
+                        <div class="disk disk-3"></div>
+                        <div class="disk disk-2"></div>
+                        <div class="disk disk-1"></div>
+                    </div>
+                    <div class="peg-visual">
+                        <div class="peg-top-cap"></div>
+                        <div class="peg-shaft"></div>
+                        <div class="peg-base"></div>
+                    </div>
+                    <span class="peg-label">A</span>
+                </div>
+
+                <!-- ===== 柱子 B (中) - 空柱子 ===== -->
+                <div class="peg-area">
+                    <div class="disks-stack">
+                        <!-- 空，无盘子 -->
+                    </div>
+                    <div class="peg-visual">
+                        <div class="peg-top-cap"></div>
+                        <div class="peg-shaft"></div>
+                        <div class="peg-base"></div>
+                    </div>
+                    <span class="peg-label">B</span>
+                </div>
+
+                <!-- ===== 柱子 C (右) - 空柱子 ===== -->
+                <div class="peg-area">
+                    <div class="disks-stack">
+                        <!-- 空，无盘子 -->
+                    </div>
+                    <div class="peg-visual">
+                        <div class="peg-top-cap"></div>
+                        <div class="peg-shaft"></div>
+                        <div class="peg-base"></div>
+                    </div>
+                    <span class="peg-label">C</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提示：静态布局说明 -->
+        <div style="color:#5D4037; font-weight:600; font-size:0.9rem; opacity:0.8; text-align:center;">
+            ✅ 第一周目标：HTML 结构 + CSS 3D 柱子与盘子 (无交互)
+        </div>
     </div>
-
-    <div class="step-list">
-        🧪 <strong>Test instructions</strong><br>
-        • Click the button below to start the solver.<br>
-        • Open browser console (F12 → Console) to see <code>console.log</code> outputs.<br>
-        • Try random values: <strong>a=1, b=-5, c=6</strong> → roots 3 and 2.<br>
-        • <strong>a=2, b=4, c=2</strong> → double root -1.<br>
-        • <strong>a=1, b=0, c=-9</strong> → ±3.
-    </div>
-
-    <button id="solveBtn">🔍 Solve quadratic equation</button>
-
-    <div class="footnote">
-        💡 The script assumes <strong>a > 0</strong> and <strong>Δ ≥ 0</strong> (real roots).<br>
-        But if you enter invalid data or violate assumptions → clear error message via alert & console.
-    </div>
-</div>
-
-<script>
-    // Quadratic equation solver — using prompt, parseFloat, alert, console.log
-    // Fully respects the requested flow but adds friendly error handling
-    // to demonstrate common problems encountered during testing (step 7).
-    
-    function solveQuadratic() {
-        // --- STEP 1: get coefficients using prompt (three times) ---
-        let rawA = prompt("📐 Enter coefficient a (ax² + bx + c = 0)\nMust be > 0 (positive number):", "1");
-        let rawB = prompt("🔢 Enter coefficient b:", "-3");
-        let rawC = prompt("🔢 Enter coefficient c:", "2");
-        
-        // --- STEP 2: convert to number using parseFloat ---
-        let a = parseFloat(rawA);
-        let b = parseFloat(rawB);
-        let c = parseFloat(rawC);
-        
-        // Helper to show error & console, then return early (graceful degradation)
-        function showErrorAndAbort(message) {
-            alert(`❌ ERROR: ${message}\n\nPlease refresh the page and try again with valid numbers.`);
-            console.error(`[Quadratic Solver] ${message}`);
-            return false;
-        }
-        
-        // Validate numeric conversion (NaN detection)
-        if (isNaN(a) || isNaN(b) || isNaN(c)) {
-            showErrorAndAbort(`One or more inputs are NOT numbers.\nReceived: a=${rawA}, b=${rawB}, c=${rawC}\nMake sure to enter numeric values.`);
-            return;
-        }
-        
-        // --- assumption a > 0 (enforced for meaningful quadratic) ---
-        // But we check and show warning because test may reveal problems.
-        if (a === 0) {
-            showErrorAndAbort(`Coefficient "a" cannot be zero (division by zero & degenerate linear equation).\nYour input: a = ${a}\nThis violates the required assumption (a > 0).`);
-            return;
-        }
-        if (a < 0) {
-            // technically works but assumption says a>0, still we compute correctly, but notify user
-            console.warn(`[Warning] Coefficient a = ${a} is negative. The formula still works, but problem statement assumed a > 0. Roots will be correct.`);
-            // we allow computation because mathematically it's fine, but we will mention potential sign issues? not a real problem.
-            // However keep calculation, only flag in console. But to be faithful to assumption we do NOT abort.
-            alert(`⚠️ Note: a = ${a} (negative value). Assumption required a > 0, but calculation proceeds anyway.\nRoots might be swapped? Formula works correctly.`);
-        }
-        
-        // --- STEP 3: compute discriminant delta = b*b - 4*a*c ---
-        let delta = b * b - 4 * a * c;
-        
-        // delta >= 0 is assumed, but we must handle negative values gracefully for testing robustness
-        if (delta < 0) {
-            showErrorAndAbort(`Discriminant Δ = ${delta} is NEGATIVE.\nNo real roots (complex solutions).\nAssumption requires Δ ≥ 0. Please enter coefficients giving Δ ≥ 0.`);
-            return;
-        }
-        
-        // --- STEP 4: compute x1 and x2 (real roots) ---
-        let sqrtDelta = Math.sqrt(delta);
-        let x1 = (-b + sqrtDelta) / (2 * a);
-        let x2 = (-b - sqrtDelta) / (2 * a);
-        
-        // To avoid super long decimals but keep precision: show up to 6 decimals in alert,
-        // but keep full precision for console. 
-        let formatRoot = (val) => {
-            // if the root is extremely close to integer, show as integer-like
-            if (Math.abs(val - Math.round(val)) < 1e-10) return val.toFixed(0);
-            return parseFloat(val.toFixed(8)).toString();
-        };
-        
-        let x1Display = formatRoot(x1);
-        let x2Display = formatRoot(x2);
-        
-        // Build nice result message
-        let equationStr = `${a}·x² + ${b}·x + ${c} = 0`;
-        let resultMessage = `✅ QUADRATIC SOLUTION\n${equationStr}\nΔ = ${delta.toFixed(6)}\n\nx₁ = ${x1Display}\nx₂ = ${x2Display}`;
-        
-        // --- STEP 5: alert user with x1 and x2 ---
-        alert(resultMessage);
-        
-        // --- STEP 6: tell user the same results using console.log ---
-        console.log("══════════════════════════════════════");
-        console.log(`📐 QUADRATIC EQUATION: ${a}x² + ${b}x + ${c} = 0`);
-        console.log(`📊 Discriminant (Δ) = ${delta}`);
-        console.log(`√Δ = ${sqrtDelta}`);
-        console.log(`✨ Roots:`);
-        console.log(`   → x₁ = ${x1}`);
-        console.log(`   → x₂ = ${x2}`);
-        console.log(`📢 [Alert message sent] ${resultMessage.replace(/\n/g, ' | ')}`);
-        console.log("══════════════════════════════════════");
-        
-        // Optional: If roots are extremely close due to floating point, additional note
-        if (Math.abs(x1 - x2) < 1e-12 && delta === 0) {
-            console.log("ℹ️ Double root (discriminant = 0).");
-        }
-    }
-    
-    // Attach event to button, but also allow calling manually via console if needed.
-    // The requirement: "call prompt function for three times" -> when user clicks button or script starts?
-    // According to typical interaction: the program should trigger prompts when page is loaded or by user action.
-    // To provide good UX and avoid unwanted prompts on page load (which can be annoying), we use a button.
-    // But the problem statement says "write javascript program ... save as solve.html" and prompts happen.
-    // It does not forbid using a button to start; the main program flow meets all steps: 3 prompts, conversion, delta, alert+console.
-    // To fully respect the spirit, we also auto-run on page load? Many users expect prompt on load. 
-    // However some browsers block auto-prompt unless triggered by user gesture? Actually prompt() works even on load.
-    // BUT for better testing experience we provide both: if you want auto-run, uncomment line below. I'll also give possibility 
-    // to run on load while keeping button. Requirement didn't specify user gesture, but it's safer to run prompts immediately 
-    // on window load. But because "call prompt function for three times" without additional clicks, we can auto-invoke.
-    // To avoid duplication, the script will automatically call solveQuadratic() when the page loads.
-    // BUT ALSO keep the button for extra runs (refresh to test again). That fulfills "multiple times" test easily.
-    // However the instruction: "Write a javascript program in notepad and save it as solve.html to solve ... call prompt ..."
-    // Typically means the script runs on page opening. I'll run automatically on window load.
-    // But also keep button for convenience, but we must avoid double prompts when button is clicked? No, that's fine.
-    
-    // The final program executes prompts on page load (first time) and also user can click button to run again.
-    // Step 7 requires testing multiple times by entering various random a,b,c. Refresh or click button.
-    
-    // Auto-invoke on load (fully automatic, matches traditional "call prompt three times" behaviour)
-    window.addEventListener("DOMContentLoaded", function() {
-        // small delay to ensure styles are ready, but not needed. But we call solver.
-        // However: we don't want to annoy with double prompts if button is clicked immediately after load.
-        // but that's okay, each prompt sequence is independent.
-        solveQuadratic();
-    });
-    
-    // Expose to button click
-    const btn = document.getElementById("solveBtn");
-    if (btn) {
-        btn.addEventListener("click", function(e) {
-            solveQuadratic();
-        });
-    }
-    
-    // Additional debugging note: show console welcome message
-    console.log("%c🔥 Quadratic Solver ready — click button or refresh to run prompts", "color: #2c7a6e; font-size: 14px; font-weight: bold;");
-    console.log("📌 Open this message and test multiple random values. Check alerts & console output.");
-</script>
-
-<!--
-    ==========  TESTING & PROBLEMS ENCOUNTERED (step 7) ==========
-    After multiple tests in web browser with various random a,b,c, these problems appear:
-
-    1.  **Non-numeric or empty inputs**  
-        - If user types letters (e.g., "abc") or leaves blank & clicks OK → parseFloat returns NaN.
-        - Our code detects NaN and alerts with clear error. Without validation, roots become NaN and user confused.
-    
-    2.  **Cancelling prompt** (click Cancel)  
-        - prompt returns `null` → parseFloat(null) → NaN. Again triggers validation error.
-
-    3.  **Violation of assumption "a > 0"**  
-        - If user enters a = 0 → division by zero (x = (-b ± sqrtΔ)/(0) => infinite). Our validation blocks with explicit error.
-        - If a negative, formula still gives correct roots, but sign flipping might surprise some users. Still works but violates assumption.
-
-    4.  **Negative discriminant (Δ < 0)**  
-        - Many random combinations (e.g., a=2, b=1, c=5) produce Δ negative → no real roots.
-        - Code detects and shows alert "No real roots" instead of Math.sqrt(negative) → NaN. Graceful message avoids silent NaN.
-
-    5.  **Floating point precision issues**  
-        - For roots that are rational but not exact (e.g., a=3, b=5, c=1 → Δ = 25 - 12 = 13 → sqrt(13) ≈ 3.60555...)
-        - x1/x2 might be long decimals. Our formatting shows up to 8 digits but actual floating errors exist (e.g., 0.33333333 instead of 1/3).
-        - In rare cases, expected integer roots may appear as 2.0000000000004 due to binary representation. Not a critical failure but shows numeric fragility.
-
-    6.  **Browser prompt fatigue & UX**  
-        - Using three consecutive prompts each time can be tedious for multiple test iterations.
-        - Some browsers block repeated alerts/prompts if triggered too quickly? Not typical but can be annoying.
-        - No way to directly edit previous values without re-entering all three.
-
-    7.  **Large numbers / overflow**  
-        - For huge coefficients (e.g., a=1e20, b=1e20, c=1e20) discriminant can overflow JS number (Infinity). Math.sqrt(Infinity) → Infinity, roots become Infinity/-Infinity.
-        - Not common but can happen during "random" extreme tests.
-
-    8.  **Parsing comma-separated or scientific notation**  
-        - parseFloat("1,5") → 1 (stops at comma). User might expect 1.5. This yields wrong numeric conversion without warning.
-        - parseFloat("5e2") works (500), but general user may not know.
-
-    9.  **Assumption "a>0, delta>=0" not enforced by default**  
-        - Many random triples (a,b,c) will violate these constraints, causing errors or confusing outputs.
-        - The original skeleton didn't have validation; our solution adds robust checks which reveal these problems clearly.
-
-    ✅ Overall, after repeated tests, we realize that relying on user to follow assumptions is fragile.  
-    The most frequent problems: non-numeric entries, negative delta, a=0, and precision artifacts.  
-    The script now handles them gracefully with informative feedback (alert + console) and avoids crashes.
-
-    How to push to GitHub:  
-    - Save this file as "solve.html"  
-    - Create a repository on GitHub (e.g., "quadratic-solver")  
-    - Use git commands:  
-        git init  
-        git add solve.html  
-        git commit -m "Add quadratic equation solver with prompts & alerts"  
-        git remote add origin https://github.com/YOUR_USERNAME/quadratic-solver.git  
-        git push -u origin main  
-    - After push, the file will be available. Share the link like:  
-        https://github.com/YOUR_USERNAME/quadratic-solver/blob/main/solve.html  
-      (or live via GitHub Pages if enabled)
--->
 </body>
 </html>
