@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>汉诺塔 · 第一周静态布局</title>
+    <title>汉诺塔 · 3D互动学习游戏</title>
     <style>
         /* ========================================
-           CSS 变量 - 统一管理尺寸与颜色
+           CSS 变量 & 全局样式
            ======================================== */
         :root {
             --bg-start: #87CEEB;
@@ -19,6 +19,8 @@
             --peg-top-color: #D4A76A;
             --text-color: #2C1810;
             --shadow-color: rgba(0, 0, 0, 0.35);
+            --warning-red: #e74c3c;
+            --victory-gold: #f9a825;
             --disk-height: 28px;
             --disk-min-width: 58px;
             --disk-max-width: 180px;
@@ -26,6 +28,7 @@
             --peg-shaft-width: 10px;
             --platform-depth: 28px;
             --font-main: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            --transition-speed: 0.25s;
         }
 
         * {
@@ -37,16 +40,26 @@
         body {
             font-family: var(--font-main);
             min-height: 100vh;
-            background: linear-gradient(170deg, #87CEEB 0%, #9EC8E8 15%, #B5C2E5 30%, #C4B8E2 50%, #C9AEE0 65%, #BBA0E3 85%, #A890D8 100%);
+            background: linear-gradient(170deg,
+                    #87CEEB 0%,
+                    #9EC8E8 15%,
+                    #B5C2E5 30%,
+                    #C4B8E2 50%,
+                    #C9AEE0 65%,
+                    #BBA0E3 85%,
+                    #A890D8 100%);
             background-attachment: fixed;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
             user-select: none;
+            -webkit-user-select: none;
         }
 
-        /* 背景光晕装饰 */
+        /* 背景装饰光晕 */
         body::before {
             content: '';
             position: fixed;
@@ -62,7 +75,9 @@
             z-index: 0;
         }
 
-        /* 主容器 - 毛玻璃效果 */
+        /* ========================================
+           主容器
+           ======================================== */
         .main-container {
             position: relative;
             z-index: 1;
@@ -83,7 +98,9 @@
             gap: 18px;
         }
 
-        /* 标题 */
+        /* ========================================
+           标题
+           ======================================== */
         .game-title {
             font-size: clamp(1.5rem, 3.5vw, 2.2rem);
             font-weight: 800;
@@ -93,42 +110,121 @@
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
             line-height: 1.3;
         }
+        .game-title .icon {
+            display: inline-block;
+            font-size: 1.3em;
+            animation: titleBounce 2s ease-in-out infinite;
+            transform-origin: center;
+        }
+        @keyframes titleBounce {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+            50% {
+                transform: translateY(0);
+            }
+            70% {
+                transform: translateY(-6px);
+            }
+            85% {
+                transform: translateY(0);
+            }
+        }
 
-        /* 静态信息条 */
-        .info-bar {
-            background: rgba(255, 255, 255, 0.5);
-            border-radius: 30px;
-            padding: 8px 24px;
-            font-weight: 700;
-            color: #4E342E;
-            font-size: 1rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        /* ========================================
+           设置面板
+           ======================================== */
+        .settings-panel {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+            padding: 12px 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
         }
-        .highlight {
+        .settings-panel label {
+            font-weight: 700;
+            color: #4E342E;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+        .settings-panel input[type="range"] {
+            -webkit-appearance: none;
+            width: 130px;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(to right, #E8C9A0, #8D6E63);
+            outline: none;
+            cursor: pointer;
+        }
+        .settings-panel input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 40% 35%, #FDEBD0, #C9956B);
+            border: 2px solid #8D6E63;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+            transition: transform var(--transition-speed);
+        }
+        .settings-panel input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(1.15);
+        }
+        .disk-count-display {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
             background: radial-gradient(circle at 40% 35%, #FFF8E1, #F9A825);
-            color: #3E2723;
-            padding: 4px 14px;
-            border-radius: 20px;
             font-weight: 800;
+            font-size: 1.25rem;
+            color: #3E2723;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+            transition: all var(--transition-speed);
+        }
+        .disk-count-display.pulse {
+            animation: countPulse 0.4s ease-out;
+        }
+        @keyframes countPulse {
+            0% {
+                transform: scale(1);
+            }
+            40% {
+                transform: scale(1.25);
+            }
+            100% {
+                transform: scale(1);
+            }
         }
 
-        /* 游戏场景 - 3D 透视容器 */
+        /* ========================================
+           游戏区域 - 3D透视
+           ======================================== */
         .game-scene {
             width: 100%;
             perspective: 900px;
             perspective-origin: 50% 45%;
             padding: 10px 0 20px;
         }
-
-        /* 平台 - 使用 rotateX 创造 3D 倾斜感 */
         .game-platform {
             position: relative;
             width: 100%;
             min-height: 340px;
-            background: linear-gradient(180deg, #8D6E63 0%, #6D4C41 15%, #5D4037 40%, #4E342E 100%);
+            background: linear-gradient(180deg,
+                    #8D6E63 0%,
+                    #6D4C41 15%,
+                    #5D4037 40%,
+                    #4E342E 100%);
             border-radius: 18px;
             transform: rotateX(8deg);
             transform-style: preserve-3d;
@@ -155,7 +251,9 @@
             pointer-events: none;
         }
 
-        /* 单个柱子区域 */
+        /* ========================================
+           柱子区域
+           ======================================== */
         .peg-area {
             position: relative;
             flex: 1;
@@ -164,7 +262,23 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            cursor: pointer;
+            transition: filter var(--transition-speed);
             z-index: 1;
+            padding-bottom: 10px;
+        }
+        .peg-area:hover {
+            filter: brightness(1.08);
+        }
+        .peg-area.selected-source {
+            z-index: 5;
+        }
+        .peg-area.selected-source .peg-shaft {
+            box-shadow: 0 0 20px 6px rgba(255, 200, 60, 0.7);
+        }
+        .peg-area.selected-source .peg-top-cap {
+            box-shadow: 0 0 18px 8px rgba(255, 200, 60, 0.8);
+            background: radial-gradient(circle at 40% 30%, #FFE082, #F9A825);
         }
 
         /* 盘子堆叠容器 */
@@ -179,21 +293,27 @@
             z-index: 3;
         }
 
-        /* 单个盘子 - 3D 渐变与阴影 */
+        /* 单个盘子 */
         .disk {
             position: relative;
             height: var(--disk-height);
             border-radius: 14px;
+            cursor: pointer;
+            transition:
+                transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.2s ease,
+                margin 0.2s ease;
             flex-shrink: 0;
+            z-index: 1;
+            /* 3D厚度效果 */
             box-shadow:
                 0 3px 0 rgba(0, 0, 0, 0.2),
                 0 5px 10px rgba(0, 0, 0, 0.25),
                 0 1px 2px rgba(255, 255, 255, 0.3) inset;
             border: 1.5px solid rgba(0, 0, 0, 0.15);
+            /* 使用transform-style保留3D */
             transform-style: preserve-3d;
-            margin-bottom: -8px; /* 盘子间轻微重叠，形成堆叠感 */
         }
-        /* 盘子顶部高光 */
         .disk::after {
             content: '';
             position: absolute;
@@ -205,8 +325,51 @@
             border-radius: 50%;
             pointer-events: none;
         }
+        /* 选中盘子 - 抬起效果 */
+        .disk.selected {
+            transform: translateY(-14px) scale(1.04);
+            box-shadow:
+                0 8px 6px rgba(0, 0, 0, 0.25),
+                0 14px 22px rgba(0, 0, 0, 0.3),
+                0 0 16px 4px rgba(255, 200, 60, 0.55),
+                0 1px 3px rgba(255, 255, 255, 0.35) inset;
+            z-index: 20 !important;
+            border-color: rgba(255, 180, 30, 0.7);
+        }
+        /* 自动求解移动中的盘子 */
+        .disk.auto-moving {
+            animation: diskFloat 0.45s ease-in-out;
+        }
+        @keyframes diskFloat {
+            0% {
+                transform: translateY(0) scale(1);
+            }
+            35% {
+                transform: translateY(-22px) scale(1.07);
+            }
+            70% {
+                transform: translateY(-8px) scale(1.03);
+            }
+            100% {
+                transform: translateY(0) scale(1);
+            }
+        }
+        /* 胜利时盘子发光 */
+        .disk.victory-glow {
+            animation: diskGlowWin 0.7s ease-in-out infinite alternate;
+        }
+        @keyframes diskGlowWin {
+            0% {
+                box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2), 0 5px 10px rgba(0, 0, 0, 0.25), 0 0 12px 2px rgba(255, 215, 0, 0.5);
+            }
+            100% {
+                box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2), 0 5px 10px rgba(0, 0, 0, 0.25), 0 0 28px 8px rgba(255, 215, 0, 0.9);
+            }
+        }
 
-        /* 柱子的 3D 视觉元素 */
+        /* ========================================
+           柱子视觉元素
+           ======================================== */
         .peg-visual {
             position: relative;
             display: flex;
@@ -223,6 +386,7 @@
             box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
             margin-bottom: -3px;
             z-index: 2;
+            transition: all var(--transition-speed);
         }
         .peg-shaft {
             width: var(--peg-shaft-width);
@@ -240,6 +404,7 @@
                 0 4px 12px rgba(0, 0, 0, 0.3),
                 inset 0 2px 0 rgba(255, 255, 255, 0.15);
             z-index: 1;
+            transition: box-shadow var(--transition-speed);
         }
         .peg-base {
             width: 44px;
@@ -250,6 +415,7 @@
             margin-top: -4px;
             z-index: 0;
         }
+        /* 柱子标签 */
         .peg-label {
             margin-top: 8px;
             font-weight: 700;
@@ -257,78 +423,336 @@
             color: #FDEBD0;
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
             letter-spacing: 0.05em;
+            pointer-events: none;
             text-align: center;
         }
 
         /* ========================================
-           静态页面专用：盘子颜色与宽度
-           这里手动为每个盘子设置样式，模拟大小渐变
+           控制面板
            ======================================== */
-        .disk-5 { width: 180px; background: linear-gradient(180deg, hsl(0, 70%, 70%) 0%, hsl(0, 70%, 50%) 35%, hsl(0, 70%, 40%) 100%); }
-        .disk-4 { width: 150px; background: linear-gradient(180deg, hsl(72, 70%, 66%) 0%, hsl(72, 70%, 48%) 35%, hsl(72, 70%, 38%) 100%); }
-        .disk-3 { width: 120px; background: linear-gradient(180deg, hsl(144, 70%, 64%) 0%, hsl(144, 70%, 46%) 35%, hsl(144, 70%, 36%) 100%); }
-        .disk-2 { width: 90px;  background: linear-gradient(180deg, hsl(216, 70%, 66%) 0%, hsl(216, 70%, 48%) 35%, hsl(216, 70%, 38%) 100%); }
-        .disk-1 { width: 60px;  background: linear-gradient(180deg, hsl(288, 70%, 68%) 0%, hsl(288, 70%, 50%) 35%, hsl(288, 70%, 40%) 100%); }
+        .controls-panel {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn {
+            padding: 11px 22px;
+            border: none;
+            border-radius: 25px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.03em;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-family: var(--font-main);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+            filter: grayscale(25%);
+        }
+        .btn-auto {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            color: #fff;
+        }
+        .btn-auto:hover:not(:disabled) {
+            background: linear-gradient(135deg, #5CBF60, #388E3C);
+            box-shadow: 0 6px 18px rgba(46, 125, 50, 0.4);
+        }
+        .btn-auto.cancelling {
+            background: linear-gradient(135deg, #f44336, #c62828);
+            animation: btnPulse 0.8s ease-in-out infinite;
+        }
+        @keyframes btnPulse {
+            0%,
+            100% {
+                box-shadow: 0 4px 12px rgba(200, 30, 30, 0.4);
+            }
+            50% {
+                box-shadow: 0 8px 24px rgba(200, 30, 30, 0.7);
+            }
+        }
+        .btn-reset {
+            background: linear-gradient(135deg, #FF9800, #E65100);
+            color: #fff;
+        }
+        .btn-reset:hover:not(:disabled) {
+            background: linear-gradient(135deg, #FFA726, #F57C00);
+            box-shadow: 0 6px 18px rgba(230, 81, 0, 0.4);
+        }
+        .btn-sound {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            padding: 0;
+            font-size: 1.2rem;
+            background: rgba(255, 255, 255, 0.6);
+            color: #4E342E;
+            border: 2px solid #BCAAA4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-sound.muted {
+            opacity: 0.5;
+            border-color: #ccc;
+        }
 
-        /* 响应式 - 平板 */
+        /* 移动计数器 */
+        .move-counter {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.55);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-weight: 700;
+            color: #4E342E;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        .move-counter .count {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #E65100;
+            min-width: 30px;
+            text-align: center;
+            transition: transform 0.15s ease;
+        }
+        .move-counter .count.bump {
+            animation: countBump 0.3s ease-out;
+        }
+        @keyframes countBump {
+            0% {
+                transform: scale(1);
+            }
+            30% {
+                transform: scale(1.4);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* ========================================
+           消息区域
+           ======================================== */
+        .message-area {
+            width: 100%;
+            max-width: 600px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1rem;
+            border-radius: 12px;
+            padding: 10px 16px;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+        .message-area.warning {
+            background: rgba(231, 76, 60, 0.12);
+            color: #c0392b;
+            animation: shakeWarning 0.5s ease-out;
+            border: 2px solid rgba(231, 76, 60, 0.4);
+        }
+        .message-area.victory {
+            background: rgba(249, 168, 37, 0.18);
+            color: #5D4037;
+            animation: glowWin 1.5s ease-in-out infinite;
+            border: 2px solid rgba(249, 168, 37, 0.5);
+            font-size: 1.15rem;
+        }
+        .message-area.info {
+            background: rgba(255, 255, 255, 0.4);
+            color: #6D4C41;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        .message-area.fade-out {
+            animation: fadeOutMsg 1.5s ease-out forwards;
+        }
+        @keyframes shakeWarning {
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            15% {
+                transform: translateX(-8px);
+            }
+            30% {
+                transform: translateX(8px);
+            }
+            45% {
+                transform: translateX(-6px);
+            }
+            60% {
+                transform: translateX(6px);
+            }
+            75% {
+                transform: translateX(-3px);
+            }
+            90% {
+                transform: translateX(3px);
+            }
+        }
+        @keyframes glowWin {
+            0%,
+            100% {
+                box-shadow: 0 0 12px 2px rgba(249, 168, 37, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 28px 8px rgba(249, 168, 37, 0.75);
+            }
+        }
+        @keyframes fadeOutMsg {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            70% {
+                opacity: 0.3;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+        }
+
+        /* ========================================
+           响应式 - 平板
+           ======================================== */
         @media (max-width: 768px) {
             :root {
                 --disk-height: 22px;
+                --disk-min-width: 42px;
+                --disk-max-width: 130px;
                 --peg-height: 160px;
                 --peg-shaft-width: 8px;
+                --platform-depth: 20px;
             }
-            .main-container { padding: 18px 10px 14px; gap: 12px; }
-            .game-platform { padding: 14px 3% 22px; min-height: 250px; border-radius: 14px; transform: rotateX(5deg); }
-            .peg-top-cap { width: 16px; height: 16px; }
-            .peg-base { width: 32px; height: 12px; }
-            .disk { border-radius: 10px; }
-            .disk-5 { width: 130px; }
-            .disk-4 { width: 108px; }
-            .disk-3 { width: 86px; }
-            .disk-2 { width: 64px; }
-            .disk-1 { width: 42px; }
+            .main-container {
+                padding: 18px 10px 14px;
+                border-radius: 20px;
+                gap: 12px;
+            }
+            .game-platform {
+                padding: 14px 3% 22px;
+                min-height: 250px;
+                border-radius: 14px;
+                transform: rotateX(5deg);
+            }
+            .peg-top-cap {
+                width: 16px;
+                height: 16px;
+            }
+            .peg-base {
+                width: 32px;
+                height: 12px;
+            }
+            .disk {
+                border-radius: 10px;
+            }
+            .btn {
+                padding: 9px 16px;
+                font-size: 0.85rem;
+            }
+            .peg-label {
+                font-size: 0.75rem;
+            }
         }
-
         @media (max-width: 420px) {
             :root {
                 --disk-height: 18px;
+                --disk-min-width: 34px;
+                --disk-max-width: 100px;
                 --peg-height: 120px;
                 --peg-shaft-width: 6px;
             }
-            .main-container { padding: 12px 6px 10px; gap: 8px; }
-            .game-platform { padding: 10px 2% 16px; min-height: 190px; border-radius: 10px; transform: rotateX(3deg); }
-            .disk { border-radius: 8px; }
-            .disk-5 { width: 100px; }
-            .disk-4 { width: 84px; }
-            .disk-3 { width: 68px; }
-            .disk-2 { width: 52px; }
-            .disk-1 { width: 36px; }
+            .main-container {
+                padding: 12px 6px 10px;
+                border-radius: 16px;
+                gap: 8px;
+            }
+            .game-platform {
+                padding: 10px 2% 16px;
+                min-height: 190px;
+                border-radius: 10px;
+                transform: rotateX(3deg);
+            }
+            .disk {
+                border-radius: 8px;
+            }
+            .btn {
+                padding: 7px 12px;
+                font-size: 0.78rem;
+                border-radius: 18px;
+            }
+            .settings-panel {
+                gap: 6px;
+                padding: 8px 12px;
+            }
+            .settings-panel input[type="range"] {
+                width: 80px;
+            }
+            .peg-top-cap {
+                width: 12px;
+                height: 12px;
+            }
+            .peg-base {
+                width: 24px;
+                height: 10px;
+            }
+            .peg-label {
+                font-size: 0.7rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="main-container">
-        <!-- 标题 -->
-        <h1 class="game-title">🗼 汉诺塔 · 3D 静态布局 🗼</h1>
 
-        <!-- 静态信息：显示盘子数量 -->
-        <div class="info-bar">
-            📌 当前盘子数量：<span class="highlight">5</span>
+    <!-- ========================================
+    主容器
+    ======================================== -->
+    <div class="main-container" id="mainContainer">
+        <!-- 标题 -->
+        <h1 class="game-title">
+            <span class="icon">🗼</span> 汉诺塔 · 3D互动游戏
+            <span class="icon">🗼</span>
+        </h1>
+
+        <!-- 设置面板：盘子数量选择 -->
+        <div class="settings-panel" id="settingsPanel">
+            <label for="diskCountSlider">🎯 盘子数量：</label>
+            <input
+            type="range"
+            id="diskCountSlider"
+            min="3"
+            max="8"
+            value="5"
+            step="1"
+            aria-label="选择盘子数量，3到8个"
+            >
+            <span class="disk-count-display" id="diskCountDisplay" aria-live="polite">5</span>
         </div>
 
-        <!-- 3D 游戏场景 -->
+        <!-- 游戏场景 - 3D透视区域 -->
         <div class="game-scene">
-            <div class="game-platform">
-                <!-- ===== 柱子 A (左) - 所有盘子初始位置 ===== -->
-                <div class="peg-area">
-                    <div class="disks-stack">
-                        <!-- 静态放置5个盘子，从大到小（底部最大） -->
-                        <div class="disk disk-5"></div>
-                        <div class="disk disk-4"></div>
-                        <div class="disk disk-3"></div>
-                        <div class="disk disk-2"></div>
-                        <div class="disk disk-1"></div>
-                    </div>
+            <div class="game-platform" id="gamePlatform">
+                <!-- 柱子A -->
+                <div class="peg-area" data-peg-index="0" id="pegArea0" tabindex="0" role="button" aria-label="柱子A">
+                    <div class="disks-stack" id="disksStack0"></div>
                     <div class="peg-visual">
                         <div class="peg-top-cap"></div>
                         <div class="peg-shaft"></div>
@@ -336,12 +760,9 @@
                     </div>
                     <span class="peg-label">A</span>
                 </div>
-
-                <!-- ===== 柱子 B (中) - 空柱子 ===== -->
-                <div class="peg-area">
-                    <div class="disks-stack">
-                        <!-- 空，无盘子 -->
-                    </div>
+                <!-- 柱子B -->
+                <div class="peg-area" data-peg-index="1" id="pegArea1" tabindex="0" role="button" aria-label="柱子B">
+                    <div class="disks-stack" id="disksStack1"></div>
                     <div class="peg-visual">
                         <div class="peg-top-cap"></div>
                         <div class="peg-shaft"></div>
@@ -349,21 +770,776 @@
                     </div>
                     <span class="peg-label">B</span>
                 </div>
-
-                <!-- ===== 柱子 C (右) - 空柱子 ===== -->
-                <div class="peg-area">
-                    <div class="disks-stack">
-                        <!-- 空，无盘子 -->
-                    </div>
+                <!-- 柱子C (目标) -->
+                <div class="peg-area" data-peg-index="2" id="pegArea2" tabindex="0" role="button" aria-label="柱子C（目标）">
+                    <div class="disks-stack" id="disksStack2"></div>
                     <div class="peg-visual">
                         <div class="peg-top-cap"></div>
                         <div class="peg-shaft"></div>
                         <div class="peg-base"></div>
                     </div>
-                    <span class="peg-label">C</span>
+                    <span class="peg-label">C 🎯</span>
                 </div>
             </div>
         </div>
+
+        <!-- 控制按钮 -->
+        <div class="controls-panel" id="controlsPanel">
+            <button class="btn btn-auto" id="btnAutoSolve" aria-label="自动求解">🤖 自动求解</button>
+            <button class="btn btn-reset" id="btnReset" aria-label="重置游戏">🔄 重置</button>
+            <button class="btn btn-sound muted" id="btnSound" aria-label="音效开关" title="音效：关">🔇</button>
+            <div class="move-counter">
+                📦 移动步数：<span class="count" id="moveCountDisplay">0</span>
+            </div>
+        </div>
+
+        <!-- 消息区域 -->
+        <div class="message-area info" id="messageArea" aria-live="assertive" role="status">
+            💡 点击柱子选中顶部盘子，再点击目标柱子放置
+        </div>
     </div>
+
+    <script>
+        // ========================================
+        // 汉诺塔游戏类 - HanoiGame
+        // 使用面向对象风格，管理所有游戏状态与逻辑
+        // ========================================
+        class HanoiGame {
+            constructor() {
+                // --- DOM元素缓存 ---
+                this.diskCountSlider = document.getElementById('diskCountSlider');
+                this.diskCountDisplay = document.getElementById('diskCountDisplay');
+                this.gamePlatform = document.getElementById('gamePlatform');
+                this.moveCountDisplay = document.getElementById('moveCountDisplay');
+                this.messageArea = document.getElementById('messageArea');
+                this.btnAutoSolve = document.getElementById('btnAutoSolve');
+                this.btnReset = document.getElementById('btnReset');
+                this.btnSound = document.getElementById('btnSound');
+                this.settingsPanel = document.getElementById('settingsPanel');
+                this.pegAreas = [
+                    document.getElementById('pegArea0'),
+                    document.getElementById('pegArea1'),
+                    document.getElementById('pegArea2'),
+                ];
+                this.disksStacks = [
+                    document.getElementById('disksStack0'),
+                    document.getElementById('disksStack1'),
+                    document.getElementById('disksStack2'),
+                ];
+
+                // --- 游戏状态 ---
+                // pegs: 二维数组，每个peg是一个栈（数组），数组末尾是顶部盘子
+                // 使用push()/pop()操作栈顶（数组末尾）
+                // 例如 pegs[0] = [5, 4, 3, 2, 1] 表示5在底部，1在顶部
+                this.gameState = {
+                    disksCount: 5,
+                    pegs: [
+                        [],
+                        [],
+                        []
+                    ],
+                    moves: 0,
+                    isAutoSolving: false,
+                    autoSolveCancelled: false,
+                    selectedPegIndex: null, // 当前选中了哪个柱子的顶部盘子
+                    gameWon: false,
+                };
+
+                // 自动求解相关
+                this.autoSolveTimeoutId = null;
+                this.autoSolveSteps = [];
+                this.autoSolveStepIndex = 0;
+
+                // 音效相关
+                this.soundEnabled = false;
+                this.audioCtx = null;
+
+                // 消息淡出计时器
+                this.messageFadeTimeout = null;
+
+                // --- 初始化 ---
+                this.init();
+            }
+
+            // ========================================
+            // 初始化
+            // ========================================
+            init() {
+                const initialCount = parseInt(this.diskCountSlider.value) || 5;
+                this.gameState.disksCount = initialCount;
+                this.resetPegs();
+                this.gameState.moves = 0;
+                this.gameState.selectedPegIndex = null;
+                this.gameState.gameWon = false;
+                this.gameState.isAutoSolving = false;
+                this.gameState.autoSolveCancelled = false;
+                this.updateDiskCountDisplay();
+                this.render();
+                this.updateMoveDisplay();
+                this.setMessage('💡 点击柱子选中顶部盘子，再点击目标柱子放置', 'info');
+                this.bindEvents();
+            }
+
+            // ========================================
+            // 重置盘子数组 - 使用slice()克隆初始状态的概念
+            // 所有盘子初始在peg[0]（柱子A）
+            // ========================================
+            resetPegs() {
+                const n = this.gameState.disksCount;
+                // 使用Array.from创建初始盘子序列 [n, n-1, ..., 1]
+                // 这模拟了slice克隆的概念：我们从完整序列创建
+                const initialStack = Array.from({ length: n }, (_, i) => n - i);
+                // initialStack = [n, n-1, ..., 2, 1]  (索引0=最大盘子=底部)
+                this.gameState.pegs = [
+                    initialStack.slice(), // 使用slice()克隆数组（需求要求的数组方法）
+                    [],
+                    [],
+                ];
+                // 同时保存一份初始状态副本用于重置（slice的典型用途）
+                this.initialPegsSnapshot = [
+                    initialStack.slice(),
+                    [],
+                    [],
+                ];
+            }
+
+            // ========================================
+            // 更新盘子数量显示
+            // ========================================
+            updateDiskCountDisplay() {
+                const count = this.gameState.disksCount;
+                this.diskCountDisplay.textContent = count;
+                // 脉冲动画
+                this.diskCountDisplay.classList.remove('pulse');
+                void this.diskCountDisplay.offsetWidth;
+                this.diskCountDisplay.classList.add('pulse');
+            }
+
+            // ========================================
+            // 更新移动计数器显示
+            // ========================================
+            updateMoveDisplay() {
+                this.moveCountDisplay.textContent = this.gameState.moves;
+                // 数值变化时的小弹跳动画
+                this.moveCountDisplay.classList.remove('bump');
+                void this.moveCountDisplay.offsetWidth;
+                this.moveCountDisplay.classList.add('bump');
+            }
+
+            // ========================================
+            // 设置消息
+            // ========================================
+            setMessage(text, type = 'info') {
+                // 清除之前的淡出计时器
+                if (this.messageFadeTimeout) {
+                    clearTimeout(this.messageFadeTimeout);
+                    this.messageFadeTimeout = null;
+                }
+                this.messageArea.className = 'message-area ' + type;
+                this.messageArea.textContent = text;
+                // 警告消息3秒后自动淡出
+                if (type === 'warning') {
+                    this.messageFadeTimeout = setTimeout(() => {
+                        this.messageArea.classList.add('fade-out');
+                        this.messageFadeTimeout = setTimeout(() => {
+                            if (this.messageArea.classList.contains('fade-out') &&
+                                this.messageArea.classList.contains('warning')) {
+                                this.setMessage('💡 点击柱子选中顶部盘子，再点击目标柱子放置', 'info');
+                            }
+                        }, 1400);
+                    }, 1800);
+                }
+            }
+
+            // ========================================
+            // 渲染所有内容 - 使用forEach遍历pegs数组
+            // ========================================
+            render(animatedDiskInfo = null) {
+                // animatedDiskInfo: { pegIndex, diskSize } - 刚移动的盘子信息，用于触发动画
+                const n = this.gameState.disksCount;
+                const diskHeight = this.getDiskHeight();
+
+                // 使用forEach遍历每个柱子（需求要求的数组方法）
+                this.gameState.pegs.forEach((pegDisks, pegIndex) => {
+                    const stackContainer = this.disksStacks[pegIndex];
+                    stackContainer.innerHTML = ''; // 清空容器
+
+                    // 使用forEach遍历每个盘子进行渲染（需求要求的数组方法）
+                    pegDisks.forEach((diskSize, positionIndex) => {
+                        const diskEl = document.createElement('div');
+                        diskEl.className = 'disk';
+                        diskEl.setAttribute('data-size', diskSize);
+                        diskEl.setAttribute('data-peg', pegIndex);
+                        // 宽度按比例计算
+                        const width = this.calculateDiskWidth(diskSize);
+                        diskEl.style.width = width + 'px';
+                        // 使用HSL彩虹色系
+                        const hue = ((diskSize - 1) / Math.max(n - 1, 1)) * 300; // 0到300度（红到紫）
+                        const saturation = 70;
+                        const lightness = 48 + (diskSize / n) * 18; // 越大的盘子略微更亮
+                        diskEl.style.background = `
+                            linear-gradient(180deg,
+                                hsl(${hue}, ${saturation}%, ${lightness + 18}%) 0%,
+                                hsl(${hue}, ${saturation}%, ${lightness}%) 35%,
+                                hsl(${hue}, ${saturation + 5}%, ${lightness - 10}%) 100%)
+                        `;
+                        // 在堆叠中的垂直位置（positionIndex=0是最底部）
+                        diskEl.style.marginTop = positionIndex === 0 ? '0' : (-diskHeight * 0.22) + 'px';
+                        // 使用z-index确保底部盘子在前（对于层叠视觉）
+                        diskEl.style.zIndex = positionIndex + 1;
+
+                        // 检查是否选中
+                        if (this.gameState.selectedPegIndex === pegIndex &&
+                            positionIndex === pegDisks.length - 1) {
+                            diskEl.classList.add('selected');
+                        }
+
+                        // 检查是否需要动画
+                        if (animatedDiskInfo &&
+                            animatedDiskInfo.pegIndex === pegIndex &&
+                            animatedDiskInfo.diskSize === diskSize &&
+                            positionIndex === pegDisks.length - 1) {
+                            diskEl.classList.add('auto-moving');
+                        }
+
+                        // 胜利时所有在目标柱子的盘子发光
+                        if (this.gameState.gameWon && pegIndex === 2) {
+                            diskEl.classList.add('victory-glow');
+                        }
+
+                        stackContainer.appendChild(diskEl);
+                    });
+
+                    // 如果该柱子是选中状态但没有盘子（边界情况），取消选中
+                    if (this.gameState.selectedPegIndex === pegIndex && pegDisks.length === 0) {
+                        // 这通常不会发生，但做安全检查
+                    }
+                });
+
+                // 更新柱子区域的选中状态CSS类
+                this.pegAreas.forEach((area, idx) => {
+                    area.classList.toggle('selected-source', this.gameState.selectedPegIndex === idx);
+                });
+            }
+
+            // ========================================
+            // 计算盘子宽度（像素）
+            // ========================================
+            calculateDiskWidth(diskSize) {
+                const n = this.gameState.disksCount;
+                const minW = this.getDiskMinWidth();
+                const maxW = this.getDiskMaxWidth();
+                if (n <= 1) return (minW + maxW) / 2;
+                // 线性插值：size=1 → minW, size=n → maxW
+                return minW + ((diskSize - 1) / (n - 1)) * (maxW - minW);
+            }
+
+            getDiskHeight() {
+                const style = getComputedStyle(document.documentElement);
+                return parseInt(style.getPropertyValue('--disk-height').trim()) || 28;
+            }
+            getDiskMinWidth() {
+                const style = getComputedStyle(document.documentElement);
+                return parseInt(style.getPropertyValue('--disk-min-width').trim()) || 58;
+            }
+            getDiskMaxWidth() {
+                const style = getComputedStyle(document.documentElement);
+                return parseInt(style.getPropertyValue('--disk-max-width').trim()) || 180;
+            }
+
+            // ========================================
+            // 验证移动是否有效
+            // from, to: peg索引
+            // ========================================
+            isValidMove(fromIndex, toIndex) {
+                if (fromIndex === toIndex) return false;
+                const fromPeg = this.gameState.pegs[fromIndex];
+                const toPeg = this.gameState.pegs[toIndex];
+                // 源柱子不能为空（使用length检查栈高度 - 需求要求的数组属性）
+                if (fromPeg.length === 0) return false;
+                const movingDisk = fromPeg[fromPeg.length - 1]; // 顶部盘子（数组末尾）
+                // 目标柱子为空，或目标顶部盘子大于移动的盘子
+                if (toPeg.length === 0) return true;
+                const topDiskOnTarget = toPeg[toPeg.length - 1];
+                return movingDisk < topDiskOnTarget;
+            }
+
+            // ========================================
+            // 执行移动 - 使用push()和pop()（需求要求的数组方法）
+            // ========================================
+            executeMove(fromIndex, toIndex) {
+                // 使用pop()从源柱子顶部移除盘子
+                const disk = this.gameState.pegs[fromIndex].pop();
+                // 使用push()将盘子添加到目标柱子顶部
+                this.gameState.pegs[toIndex].push(disk);
+                this.gameState.moves++;
+                this.updateMoveDisplay();
+                // 播放移动音效
+                this.playSound('move');
+                // 检查胜利
+                this.checkWin();
+                return disk;
+            }
+
+            // ========================================
+            // 检查胜利条件 - 所有盘子在peg[2]（柱子C）
+            // ========================================
+            checkWin() {
+                // 使用length检查 - 目标柱子的盘子数量应等于总盘子数
+                if (this.gameState.pegs[2].length === this.gameState.disksCount) {
+                    this.gameState.gameWon = true;
+                    this.gameState.selectedPegIndex = null;
+                    this.render();
+                    const minMoves = Math.pow(2, this.gameState.disksCount) - 1;
+                    const efficiency = this.gameState.moves === minMoves ? ' 🏆 最优解！' :
+                        this.gameState.moves <= minMoves * 1.5 ? ' 👍 很不错！' : '';
+                    this.setMessage(
+                        `🎉 恭喜！你成功完成了${this.gameState.disksCount}层汉诺塔！共${this.gameState.moves}步（最优${minMoves}步）${efficiency}`,
+                        'victory'
+                    );
+                    this.playSound('victory');
+                    return true;
+                }
+                return false;
+            }
+
+            // ========================================
+            // 处理柱子点击（选择/放置逻辑）
+            // ========================================
+            handlePegClick(pegIndex) {
+                // 自动求解中或游戏已胜利时忽略
+                if (this.gameState.isAutoSolving) return;
+                if (this.gameState.gameWon) {
+                    this.setMessage('🏆 游戏已胜利！请点击"重置"开始新游戏', 'info');
+                    return;
+                }
+
+                const selectedIndex = this.gameState.selectedPegIndex;
+
+                if (selectedIndex === null) {
+                    // 没有选中的盘子 → 尝试选中该柱子的顶部盘子
+                    const pegDisks = this.gameState.pegs[pegIndex];
+                    if (pegDisks.length === 0) {
+                        this.setMessage('⚠️ 该柱子上没有盘子可选中', 'warning');
+                        this.playSound('invalid');
+                        return;
+                    }
+                    // 选中该柱子的顶部盘子
+                    this.gameState.selectedPegIndex = pegIndex;
+                    this.render();
+                    this.setMessage(`✅ 已选中柱子 ${this.getPegLabel(pegIndex)} 的顶部盘子（大小：${pegDisks[pegDisks.length - 1]}）`, 'info');
+                    this.playSound('select');
+                } else if (selectedIndex === pegIndex) {
+                    // 点击同一个柱子 → 取消选中
+                    this.gameState.selectedPegIndex = null;
+                    this.render();
+                    this.setMessage('💡 已取消选中', 'info');
+                } else {
+                    // 已有选中 → 尝试移动
+                    if (this.isValidMove(selectedIndex, pegIndex)) {
+                        const disk = this.executeMove(selectedIndex, pegIndex);
+                        this.gameState.selectedPegIndex = null;
+                        this.render({ pegIndex, diskSize: disk });
+                        this.setMessage(
+                            `✅ 已将盘子（大小：${disk}）从柱子 ${this.getPegLabel(selectedIndex)} 移到柱子 ${this.getPegLabel(pegIndex)}`,
+                            'info'
+                        );
+                    } else {
+                        // 无效移动
+                        this.setMessage(
+                            `❌ 无效移动！不能将大盘子放在小盘子上面。请重试`,
+                            'warning'
+                        );
+                        this.playSound('invalid');
+                        // 无效移动后取消选中
+                        this.gameState.selectedPegIndex = null;
+                        this.render();
+                    }
+                }
+            }
+
+            getPegLabel(index) {
+                return ['A', 'B', 'C'][index];
+            }
+
+            // ========================================
+            // 自动求解 - 递归算法 + setTimeout
+            // ========================================
+            autoSolve() {
+                if (this.gameState.isAutoSolving) {
+                    // 正在自动求解中，点击视为取消
+                    this.cancelAutoSolve();
+                    return;
+                }
+
+                // 如果游戏已胜利，先重置再求解
+                if (this.gameState.gameWon) {
+                    this.resetGame();
+                }
+
+                // 确保所有盘子在柱子A
+                if (this.gameState.pegs[0].length !== this.gameState.disksCount) {
+                    this.resetGame();
+                }
+
+                this.gameState.isAutoSolving = true;
+                this.gameState.autoSolveCancelled = false;
+                this.gameState.selectedPegIndex = null;
+                this.gameState.gameWon = false;
+                this.btnAutoSolve.textContent = '⏹ 取消';
+                this.btnAutoSolve.classList.add('cancelling');
+                this.disableControls(true);
+                this.setMessage('🤖 自动求解中，请稍候...', 'info');
+
+                // 使用递归生成移动步骤
+                this.autoSolveSteps = [];
+                this.generateAutoSolveSteps(
+                    this.gameState.disksCount,
+                    0, // 源柱子A
+                    2, // 目标柱子C
+                    1 // 辅助柱子B
+                );
+                this.autoSolveStepIndex = 0;
+                this.executeAutoSolveStep();
+            }
+
+            // 递归生成移动步骤（需求要求的递归算法）
+            generateAutoSolveSteps(n, from, to, aux) {
+                if (n === 0) return;
+                // 将n-1个盘子从from移到aux（使用to作为辅助）
+                this.generateAutoSolveSteps(n - 1, from, aux, to);
+                // 将第n个盘子从from移到to
+                this.autoSolveSteps.push({ from, to, diskSize: n });
+                // 将n-1个盘子从aux移到to（使用from作为辅助）
+                this.generateAutoSolveSteps(n - 1, aux, to, from);
+            }
+
+            // 逐步执行自动求解
+            executeAutoSolveStep() {
+                if (this.gameState.autoSolveCancelled) {
+                    this.finishAutoSolve('cancelled');
+                    return;
+                }
+                if (this.autoSolveStepIndex >= this.autoSolveSteps.length) {
+                    // 全部完成
+                    this.finishAutoSolve('completed');
+                    return;
+                }
+
+                const step = this.autoSolveSteps[this.autoSolveStepIndex];
+                const { from, to, diskSize } = step;
+
+                // 验证并执行移动
+                if (this.isValidMove(from, to)) {
+                    this.executeMove(from, to);
+                    this.render({ pegIndex: to, diskSize });
+                    this.setMessage(
+                        `🤖 自动：将盘子（大小：${diskSize}）从 ${this.getPegLabel(from)} → ${this.getPegLabel(to)}（第${this.autoSolveStepIndex + 1}/${this.autoSolveSteps.length}步）`,
+                        'info'
+                    );
+                }
+
+                this.autoSolveStepIndex++;
+
+                // 使用setTimeout延迟下一步（需求要求的async sleep pattern）
+                const delay = this.autoSolveStepIndex >= this.autoSolveSteps.length ? 400 : 550;
+                this.autoSolveTimeoutId = setTimeout(() => {
+                    this.executeAutoSolveStep();
+                }, delay);
+            }
+
+            // 取消自动求解
+            cancelAutoSolve() {
+                if (!this.gameState.isAutoSolving) return;
+                this.gameState.autoSolveCancelled = true;
+                if (this.autoSolveTimeoutId) {
+                    clearTimeout(this.autoSolveTimeoutId);
+                    this.autoSolveTimeoutId = null;
+                }
+                this.setMessage('⏹ 自动求解已取消', 'info');
+            }
+
+            // 完成/取消自动求解后的清理
+            finishAutoSolve(reason) {
+                this.gameState.isAutoSolving = false;
+                this.gameState.autoSolveCancelled = false;
+                this.btnAutoSolve.textContent = '🤖 自动求解';
+                this.btnAutoSolve.classList.remove('cancelling');
+                this.disableControls(false);
+                if (this.autoSolveTimeoutId) {
+                    clearTimeout(this.autoSolveTimeoutId);
+                    this.autoSolveTimeoutId = null;
+                }
+                this.autoSolveSteps = [];
+                this.autoSolveStepIndex = 0;
+                this.render();
+
+                if (reason === 'completed') {
+                    // 检查胜利
+                    if (!this.gameState.gameWon) {
+                        this.checkWin();
+                    }
+                    if (this.gameState.gameWon) {
+                        this.setMessage(
+                            `🤖 自动求解完成！共${this.gameState.moves}步（最优${Math.pow(2, this.gameState.disksCount) - 1}步）`,
+                            'victory'
+                        );
+                    }
+                }
+            }
+
+            // ========================================
+            // 重置游戏（保持盘子数量不变）
+            // ========================================
+            resetGame() {
+                // 取消正在进行的自动求解
+                if (this.gameState.isAutoSolving) {
+                    this.cancelAutoSolve();
+                    // 等待取消完成
+                    this.gameState.isAutoSolving = false;
+                    this.gameState.autoSolveCancelled = false;
+                    this.btnAutoSolve.textContent = '🤖 自动求解';
+                    this.btnAutoSolve.classList.remove('cancelling');
+                    this.disableControls(false);
+                    if (this.autoSolveTimeoutId) {
+                        clearTimeout(this.autoSolveTimeoutId);
+                        this.autoSolveTimeoutId = null;
+                    }
+                    this.autoSolveSteps = [];
+                    this.autoSolveStepIndex = 0;
+                }
+
+                // 使用slice()克隆初始状态进行重置（需求要求的数组方法）
+                this.gameState.pegs = [
+                    this.initialPegsSnapshot[0].slice(),
+                    this.initialPegsSnapshot[1].slice(),
+                    this.initialPegsSnapshot[2].slice(),
+                ];
+                this.gameState.moves = 0;
+                this.gameState.selectedPegIndex = null;
+                this.gameState.gameWon = false;
+                this.updateMoveDisplay();
+                this.render();
+                this.setMessage('🔄 游戏已重置，加油！', 'info');
+                this.playSound('reset');
+            }
+
+            // ========================================
+            // 更改盘子数量
+            // ========================================
+            changeDiskCount(newCount) {
+                if (this.gameState.isAutoSolving) return;
+                newCount = Math.max(3, Math.min(8, newCount));
+                if (newCount === this.gameState.disksCount) return;
+                this.gameState.disksCount = newCount;
+                this.diskCountSlider.value = newCount;
+                this.updateDiskCountDisplay();
+                this.resetPegs();
+                this.gameState.moves = 0;
+                this.gameState.selectedPegIndex = null;
+                this.gameState.gameWon = false;
+                this.updateMoveDisplay();
+                this.render();
+                this.setMessage(`🎯 盘子数量已设为 ${newCount}，游戏已重置`, 'info');
+            }
+
+            // ========================================
+            // 启用/禁用控件
+            // ========================================
+            disableControls(disable) {
+                this.diskCountSlider.disabled = disable;
+                this.btnReset.disabled = disable;
+                this.btnAutoSolve.disabled = false; // 自动求解按钮始终可用（用于取消）
+                // 设置面板视觉反馈
+                this.settingsPanel.style.opacity = disable ? '0.5' : '1';
+                this.settingsPanel.style.pointerEvents = disable ? 'none' : 'auto';
+            }
+
+            // ========================================
+            // 音效系统（使用Web Audio API - bonus功能）
+            // ========================================
+            initAudioContext() {
+                if (!this.audioCtx) {
+                    try {
+                        this.audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) {
+                        this.audioCtx = null;
+                    }
+                }
+            }
+            playSound(type) {
+                if (!this.soundEnabled) return;
+                this.initAudioContext();
+                if (!this.audioCtx) return;
+                const ctx = this.audioCtx;
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                switch (type) {
+                    case 'move':
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(520, now);
+                        osc.frequency.linearRampToValueAtTime(680, now + 0.08);
+                        gain.gain.setValueAtTime(0.18, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                        osc.start(now);
+                        osc.stop(now + 0.2);
+                        break;
+                    case 'select':
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(700, now);
+                        gain.gain.setValueAtTime(0.12, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                        osc.start(now);
+                        osc.stop(now + 0.1);
+                        break;
+                    case 'invalid':
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(180, now);
+                        osc.frequency.linearRampToValueAtTime(120, now + 0.25);
+                        gain.gain.setValueAtTime(0.15, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                        osc.start(now);
+                        osc.stop(now + 0.3);
+                        break;
+                    case 'victory':
+                        [0, 0.15, 0.3].forEach((delay, i) => {
+                            const o = ctx.createOscillator();
+                            const g = ctx.createGain();
+                            o.connect(g);
+                            g.connect(ctx.destination);
+                            o.type = 'sine';
+                            o.frequency.setValueAtTime([523, 659, 784][i], now + delay);
+                            g.gain.setValueAtTime(0.2, now + delay);
+                            g.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.35);
+                            o.start(now + delay);
+                            o.stop(now + delay + 0.35);
+                        });
+                        break;
+                    case 'reset':
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(300, now);
+                        osc.frequency.linearRampToValueAtTime(150, now + 0.15);
+                        gain.gain.setValueAtTime(0.1, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                        osc.start(now);
+                        osc.stop(now + 0.2);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            toggleSound() {
+                this.soundEnabled = !this.soundEnabled;
+                if (this.soundEnabled) {
+                    this.btnSound.textContent = '🔊';
+                    this.btnSound.classList.remove('muted');
+                    this.btnSound.title = '音效：开';
+                    this.initAudioContext();
+                    // 播放一个简短测试音
+                    this.playSound('select');
+                } else {
+                    this.btnSound.textContent = '🔇';
+                    this.btnSound.classList.add('muted');
+                    this.btnSound.title = '音效：关';
+                }
+            }
+
+            // ========================================
+            // 绑定事件
+            // ========================================
+            bindEvents() {
+                // 柱子区域点击事件（使用事件委托在游戏平台上）
+                // 移除旧的事件监听器（通过克隆节点）
+                const newPlatform = this.gamePlatform.cloneNode(true);
+                this.gamePlatform.parentNode.replaceChild(newPlatform, this.gamePlatform);
+                this.gamePlatform = newPlatform;
+
+                // 重新获取柱子区域引用
+                this.pegAreas = [
+                    this.gamePlatform.querySelector('[data-peg-index="0"]'),
+                    this.gamePlatform.querySelector('[data-peg-index="1"]'),
+                    this.gamePlatform.querySelector('[data-peg-index="2"]'),
+                ];
+                this.disksStacks = [
+                    this.pegAreas[0].querySelector('.disks-stack'),
+                    this.pegAreas[1].querySelector('.disks-stack'),
+                    this.pegAreas[2].querySelector('.disks-stack'),
+                ];
+
+                // 为每个柱子区域绑定点击
+                this.pegAreas.forEach((area, index) => {
+                    area.addEventListener('click', (e) => {
+                        // 阻止事件冒泡
+                        e.stopPropagation();
+                        this.handlePegClick(index);
+                    });
+                    // 键盘可访问性
+                    area.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            this.handlePegClick(index);
+                        }
+                    });
+                });
+
+                // 盘子数量滑块
+                this.diskCountSlider.addEventListener('input', () => {
+                    const val = parseInt(this.diskCountSlider.value);
+                    this.diskCountDisplay.textContent = val;
+                    this.diskCountDisplay.classList.remove('pulse');
+                    void this.diskCountDisplay.offsetWidth;
+                    this.diskCountDisplay.classList.add('pulse');
+                });
+                this.diskCountSlider.addEventListener('change', () => {
+                    const val = parseInt(this.diskCountSlider.value);
+                    this.changeDiskCount(val);
+                });
+
+                // 自动求解按钮
+                this.btnAutoSolve.addEventListener('click', () => {
+                    this.autoSolve();
+                });
+
+                // 重置按钮
+                this.btnReset.addEventListener('click', () => {
+                    this.resetGame();
+                });
+
+                // 音效按钮
+                this.btnSound.addEventListener('click', () => {
+                    this.toggleSound();
+                });
+
+                // 响应式：窗口大小变化时重新渲染
+                let resizeDebounce = null;
+                window.addEventListener('resize', () => {
+                    if (resizeDebounce) clearTimeout(resizeDebounce);
+                    resizeDebounce = setTimeout(() => {
+                        this.render();
+                    }, 200);
+                });
+            }
+        }
+
+        // ========================================
+        // 启动游戏
+        // ========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            const game = new HanoiGame();
+            // 将游戏实例暴露到全局作用域方便调试（可选）
+            window.hanoiGame = game;
+            console.log('🗼 汉诺塔 · 3D互动学习游戏 已就绪');
+            console.log('   - 使用push/pop管理盘子栈');
+            console.log('   - 使用forEach渲染DOM');
+            console.log('   - 使用slice克隆状态');
+            console.log('   - 递归算法生成自动求解步骤');
+            console.log('   - 3D CSS视觉效果（perspective, gradient, shadow）');
+            console.log('   - 响应式设计支持桌面和平板');
+            console.log('💡 点击柱子选中顶部盘子，再点击目标柱子放置。试试看！');
+        });
+    </script>
 </body>
 </html>
